@@ -1,0 +1,127 @@
+/*
+ * motor_controller_functions.h
+ *
+ *  Created on: Dec 23, 2016
+ *      Author: ben
+ */
+
+#ifndef MOTOR_CONTROLLER_FUNCTIONS_H_
+#define MOTOR_CONTROLLER_FUNCTIONS_H_
+
+#include "stm32f7xx_hal.h"
+
+//function prototypes
+void cmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS);
+void cmdTransmissionRequestSingle(uint8_t regid);
+void cmdTransmissionAbortPermenant(uint8_t regid);
+
+//CAN message defines
+//ID
+#define ID_BAMOCAR_STATION_TX		0x201; //message recieved by MC
+#define ID_BAMOCAR_STATION_RX		0x181
+
+//DLC defines
+#define DLC_CMD_REQUEST_DATA		3
+#define DLC_CMD_TORQUE				3
+
+//REGID, page 15 ndrive manual
+//#define REGID_SPEED_CMD_VAL		0x5d
+//#define REGID_SPEED_CMD_VAL_BRAMP	0x31
+#define REGID_SPEED_CMD_VAL_ARAMP	0x32
+#define REGID_SPEED_ACTUAL			0x30  //rpm
+#define REGID_SPEED_ACTUAL_FILTER 	0xa8
+#define REGID_CMD_REQUEST_DATA		0x3d
+#define REGID_CMD_TORQUE			0x90
+#define REGID_CMD_SPEED				0x31
+#define REGID_CMD_POS				0x91
+#define REGID_MESSAGES				0x8F
+#define REGID_MODE					0x51
+#define REGID_STATE					0x40
+#define REGID_I_ACTUALD				0x28
+#define REGID_I_ACTUALQ				0x27
+#define REGID_P_MOTOR				0xF6
+#define REGID_P_REGEN				0x45 //high
+#define REGID_T_MOTOR				0x49
+#define REGID_T_IGBT				0x4A
+#define REGID_T_AIR					0x4B
+#define REGID_I_REDA				0x48
+#define	REGID_V_OUT					0x8A
+
+
+//0x51 mode selection bits
+#define MODE_SPEED0_MASK			1
+#define MODE_ENABLEOFF_MASK			2
+#define MODE_CANCELCALCYCLE_MASK	3
+#define MODE_STATUSCAN_MASK			4
+#define MODE_ICLIPON_MASK			5
+#define MODE_NCLIPON_MASK			6
+#define MODE_MIXANAON_MASK			7
+#define MODE_ALLOWSYNC_MASK			8
+#define MODE_HANDWHEEL_MASK			9
+
+
+//0x8f fault masks, messages, errors, warnings, page 111
+#define MESSAGES_BADPARAS_MASK			0x1
+#define MESSAGES_POWERFAULT_MASK		0x2
+#define MESSAGES_RFEFAULT_MASK			0x4
+#define MESSAGES_BUSTIMEOUT_MASK		0x8
+#define MESSAGES_FEEDBACK_MASK			0x10
+#define MESSAGES_POWERVOLTAGE_MASK		0x20
+#define MESSAGES_MOTORTEMP_MASK			0x40
+#define MESSAGES_DEVICETEMP_MASK		0x80
+#define MESSAGES_OVERVOLTAGE_MASK		0x100
+#define MESSAGES_IPEAK_MASK				0x200
+#define MESSAGES_RACEAWAY_MASK			0x400
+#define MESSAGES_USER_MASK				0x800
+#define MESSAGES_I2R_MASK				0x1000 //bit 13 reserved, not skipped
+#define MESSAGES_HWFAIL_MASK			0x4000
+#define MESSAGES_BALLAST_MASK			0x8000
+#define MESSAGES_WARNING0_MASK			0x10000
+#define MESSAGES_ILLEGALSTATUR_MASK		0x20000
+#define MESSAGES_WARNING2_MASK			0x40000
+#define MESSAGES_POWERVOLTAGE_MASK		1 << MESSAGES_POWERVOLTAGE_OFFSET
+#define MESSAGES_MOTORTEMP_MASK			1 << MESSAGES_MOTORTEMP_OFFSET
+#define MESSAGES_DEVICETEMP_MASK		1 << MESSAGES_DEVICETEMP_OFFSET
+#define MESSAGES_OVERVOLTAGE_MASK		1 << MESSAGES_OVERVOLTAGE_OFFSET
+#define MESSAGES_IPEAK_MASK				1 << MESSAGES_IPEAK_OFFSET
+//todo
+#define MESSAGES_BADPARAS_OFFSET		0
+#define MESSAGES_POWERFAULT_OFFSET		1
+#define MESSAGES_RFEFAULT_OFFSET		2
+#define MESSAGES_BUSTIMEOUT_OFFSET		3
+#define MESSAGES_FEEDBACK_OFFSET		4
+#define MESSAGES_POWERVOLTAGE_OFFSET	5
+#define MESSAGES_MOTORTEMP_OFFSET		6
+#define MESSAGES_DEVICETEMP_OFFSET		7
+#define MESSAGES_OVERVOLTAGE_OFFSET		8
+#define MESSAGES_IPEAK_OFFSET			9
+#define MESSAGES_RACEAWAY_OFFSET		10
+#define MESSAGES_USER_OFFSET			11
+#define MESSAGES_I2R_OFFSET				12 //bit 13 reserved, not skipped
+#define MESSAGES_HWFAIL_OFFSET			14
+#define MESSAGES_BALLAST_OFFSET			15
+#define MESSAGES_WARNING0_OFFSET		16
+#define MESSAGES_ILLEGALSTATUR_OFFSET	17
+#define MESSAGES_WARNING2_OFFSET		18
+#define MESSAGES_POWERVOLTAGE_OFFSET	21
+#define MESSAGES_MOTORTEMP_OFFSET		22
+#define MESSAGES_DEVICETEMP_OFFSET		23
+#define MESSAGES_OVERVOLTAGE_OFFSET		24
+#define MESSAGES_IPEAK_OFFSET			25
+
+//range definitions
+#define RETRANSMISSION_SINGLE		0x00;
+#define RETRANSMISSION_ABORT		0xFF;  //example 10, BAMOCAR CAN MANUAL
+
+//function parameters
+
+
+
+/*mc notes
+ * N = speed = rpm
+ *
+ * little endian, {[7:0], [15:8], ...}
+ *
+ * page 105 command modes
+ */
+#endif /* MOTOR_CONTROLLER_FUNCTIONS_H_ */

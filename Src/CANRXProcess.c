@@ -10,6 +10,7 @@
 *     File dependents: (header files, flow charts, referenced documentation)
 *       1. FreeRTOS.h
 * 		2. stm32f7xx_hal_can.h
+* 		3. CANRXProcess.h
 *
 *     File Description: Used for interpreting incoming CAN messages on
 *						main module
@@ -24,6 +25,31 @@
 *
 *     Function Information
 *
+*     Name of Function: RXCAN_ISR
+*
+*     Programmer's Name: Ben Ng, xbenng@gmail.com
+*
+*     Function Return Type:
+*
+*     Parameters (list data type, name, and comment one per line):
+*
+*     Global Dependents:
+*	  1. QueueHandle_t	q_pedalbox_msg;
+*
+*     Function Description:
+*			To be called by CAN1_RX0_IRQHandler in order to queue
+*			received CAN messages to be processed by RXCANProcessTask
+*
+***************************************************************************/
+void RXCAN_ISR(CAN_HandleTypeDef *hcan) {
+	xQueueSendFromISR(q_rxcan_process, hcan->pRxMsg, NULL);
+}
+
+
+/***************************************************************************
+*
+*     Function Information
+*
 *     Name of Function: RXCANProcessTask
 *
 *     Programmer's Name: Ben Ng, xbenng@gmail.com
@@ -33,13 +59,12 @@
 *     Parameters (list data type, name, and comment one per line):
 *       1. CAN_HandleTypeDef *hcan, hcan structure address to add filter to
 *
-*      Global Dependents:
-*	   1.
+*     Global Dependents:
+*	    1.
 *
 *     Function Description: Filter Configuration.
 *
 ***************************************************************************/
-
 void CANFilterConfig(CAN_HandleTypeDef *hcan)
 {
 	  CAN_FilterConfTypeDef filter_conf;  //filter config object
@@ -69,17 +94,18 @@ void CANFilterConfig(CAN_HandleTypeDef *hcan)
 *     Function Return Type: none
 *
 *     Parameters (list data type, name, and comment one per line):
-*       1. void *pvParameters, parameters used to initialize task (not used here)
+*       1. void *q_rxcan_process, pointer to the queue which receives the CanRxMsgTypeDef types
 *
 *      Global Dependents:
 *	   1.
 *
-*     Function Description: Task to process received CAN Messages.
+*     Function Description:
+*     	Task function to process received CAN Messages.
 *     	CanRxMsgTypeDef are sent from the CAN RX interrupt handler
-*     	to this task to be processed.
+*     	to this the q_rxcan_process queue to be processed.
 *
 ***************************************************************************/
-void RXCANProcessTask(void *pvParameters)
+void RXCANProcessTask(void *q_rxcan_process)
 {
 	CanRxMsgTypeDef rx;  //CanRxMsgTypeDef to be received on the queue
 	for (;;)
@@ -87,7 +113,7 @@ void RXCANProcessTask(void *pvParameters)
 
 		//if there is a CanRxMsgTypeDef in the queue, pop it, and store in rx
 
-		if (xQueueReceive(q_rxcan_process, &rx, portMAX_DELAY) == pdTRUE)
+		if (xQueueReceive((xQueueHandle) *q_rxcan_process, &rx, portMAX_DELAY) == pdTRUE)
 		{
 			//A CAN message has been recieved
 			//check what kind of message we received

@@ -16,6 +16,8 @@
 *
 ***************************************************************************/
 #include "main_module_tasks.h"
+
+void disableMotor()
 /***************************************************************************
 *
 *     Function Information
@@ -39,7 +41,6 @@
 *     Function Description:
 *			sends 0 torque, then disables RUN, and REF
 ***************************************************************************/
-void disableMotor()
 {
 	sendTorque(0);
 	HAL_GPIO_WritePin(FRG_RUN_PORT, FRG_RUN_PIN, GPIO_PIN_RESET);
@@ -47,8 +48,56 @@ void disableMotor()
 
 }
 
+void initMotorController() {
+/***************************************************************************
+*
+*     Function Information
+*
+*     Name of Function: initMotorController
+*
+*     Programmer's Name: Ben Ng
+*
+*     Function Return Type: void
+*
+*     Parameters (list data type, name, and comment one per line):
+*       1.
+*
+*      Global Dependents:
+*
+*     Function Description:
+*		Initializes the motor controller
+*
+***************************************************************************/
+	HAL_GPIO_WritePin(FRG_RUN_PORT, FRG_RUN_PIN, GPIO_PIN_SET);
+	vTaskDelay();
+	HAL_GPIO_WritePin(REF_PORT, REF_PIN, GPIO_PIN_RESET);
 
-int pedalBoxMsgHandler() {
+}
+
+void setBrakeLight(Brake_light_status_t status)
+/***************************************************************************
+*
+*     Function Information
+*
+*     Name of Function: setBrakeLight
+*
+*     Programmer's Name: Ben Ng xbenng@gmail.com
+*
+*     Function Return Type: void
+*
+*     Parameters (list data type, name, and comment one per line):
+*       1. Brake_light_status_t status, value to write to GPIO pin
+*
+*      Global Dependents:
+*
+*     Function Description:
+*			turns brakelight on or off
+***************************************************************************/
+{
+	HAL_GPIO_WritePin(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, status);
+}
+
+int pedalBoxMsgHandlerTask() {
 /***************************************************************************
 *
 *     Function Information
@@ -114,8 +163,8 @@ int pedalBoxMsgHandler() {
 			//check if brake level is greater than the threshold level
 			if (msg.brake_level >= BRAKE_PRESSED_THRESHOLD * MAX_BRAKE_LEVEL) {
 				//brake is presssed
-				//turn on brake light
-				HAL_GPIO_WritePin(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, GPIO_PIN_SET);
+				setBrakeLight(BRAKE_LIGHT_ON);  //turn on brake light
+
 
 				//EV 2.5, check if the throttle level is greater than 25% while brakes are on
 				if (msg.throttle_level > APPS_BP_PLAUS_THRESHOLD * MAX_THROTTLE_LEVEL) {
@@ -124,8 +173,7 @@ int pedalBoxMsgHandler() {
 				}
 			} else {
 				//brake is not pressed
-				//turn off brake light
-				HAL_GPIO_WritePin(BRAKE_LIGHT_PORT, BRAKE_LIGHT_PIN, GPIO_PIN_RESET);
+				setBrakeLight(BRAKE_LIGHT_OFF);  //turn off brake light
 			}
 
 
@@ -209,6 +257,7 @@ int SendTorqueTask() {
 	}
 }
 
+int mainModuleWatchdogTask() {
 /***************************************************************************
 *
 *     Function Information
@@ -216,6 +265,7 @@ int SendTorqueTask() {
 *     Name of Function: mainModuleTimeCheckIdle
 *
 *     Programmer's Name: Kai Strubel
+*     					 Ben Ng			xbenng@gmail.com
 *
 *     Function Return Type: int
 *
@@ -233,14 +283,13 @@ int SendTorqueTask() {
 *		Checks if wheel module and pedal box are still communicating
 *		
 ***************************************************************************/
-int mainModuleTimeCheckIdle() {
 	while (1) {
-
-
+		/*
+		//check how old the wheel module data is, if its too old, then turn off LC
 		if (current_time_ms - MMWM_TIME > LC_THRESHOLD) {
 			launchControl = 0;
 			//error
-		}
+		}*/
 		vTaskDelay(500);
 	}
 }
@@ -267,25 +316,40 @@ int heartbeatIdle() {
 ***************************************************************************/
 	// write to GPIO
 	while (1) {
-		HAL_GPIO_WritePin(HEARTBEAT_PORT, HEARTBEAT_PIN, GPIO_PIN_SET);
-		vTaskDelay(10);
-		HAL_GPIO_WritePin(HEARTBEAT_PORT, HEARTBEAT_PIN, GPIO_PIN_RESET);
+		HAL_GPIO_TogglePin(HEARTBEAT_PORT, HEARTBEAT_PIN);
 		vTaskDelay(HEARTBEAT_PERIOD);
 	}
-	
 }
 
-int main(void) {
+int initRTOSObjects(void) {
+/***************************************************************************
+*
+*     Function Information
+*
+*     Name of Function: startTasks
+*
+*     Programmer's Name: Ben Ng
+*
+*     Function Return Type: int
+*
+*     Parameters (list data type, name, and comment one per line):
+*       1.
+*
+*     Global Dependents:
+*
+*     Function Description:
+*		all xTaskCre
+*
+***************************************************************************/
 
 	q_pedalbox_msg = xQueueCreate(3, sizeof(Pedalbox_msg_t));
 
 	/* Create Tasks */
-	xTaskCreate(pedalBoxMsgHandler, (signed char*) "pedalBoxMsgHandler", 1024, NULL, 1, NULL);
-	xTaskCreate(mainModuleTimeCheckIdle, (signed char*) "mainModuleTimeCheckIdle", 1024, NULL, 1, NULL);
+	xTaskCreate(pedalBoxMsgHandlerTask, (signed char*) "pedalBoxMsgHandler", 1024, NULL, 1, NULL);
+	xTaskCreate(mainModuleWatchdogTask, (signed char*) "mainModuleTimeCheckIdle", 1024, NULL, 1, NULL);
 	xTaskCreate(SendTorqueTask, (signed char*) "mainModuleTorque", 1024, NULL, 1, NULL);
 	xTaskCreate(heartbeatIdle, (signed char*) "heartbeatIdle", 1024, NULL, 1, NULL);
 
-	vTaskStartScheduler();
 
 	return 0;
 

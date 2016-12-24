@@ -12,10 +12,12 @@
 #include "stm32f7xx_hal.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "main.h"
 
 
 //defines
 //gpio aliases
+//see main.h for user names
 #define FRG_RUN_PORT		GPIOE
 #define FRG_RUN_PIN			GPIO_PIN_11
 #define REF_PORT			GPIOE
@@ -25,11 +27,19 @@
 #define HEARTBEAT_PORT		GPIOE
 #define HEARTBEAT_PIN		GPIO_PIN_1
 
+typedef enum
+{
+  BRAKE_LIGHT_OFF = GPIO_PIN_RESET,
+  BRAKE_LIGHT_ON = GPIO_PIN_SET
+} Brake_light_status_t;
+
 
 #define BRAKE_PRESSED_THRESHOLD	.05
 #define APPS_BP_PLAUS_RESET_THRESHOLD .05  //EV 2.5
 #define APPS_BP_PLAUS_THRESHOLD .25  //EV 2.5
 
+#define
+#define HEARTBEAT_PULSEWIDTH	10 / portTICK_RATE_MS
 #define HEARTBEAT_PERIOD		100 / portTICK_RATE_MS
 #define PEDALBOX_TIMEOUT		100 / portTICK_RATE_MS
 #define MAX_BRAKE_LEVEL 		0xFFF
@@ -58,15 +68,16 @@ typedef struct _pedalbox_msg {
 
 
 //function prototypes
-int pedalBoxMsgHandler();
+int pedalBoxMsgHandlerTask();
 int SendTorqueTask();
-int mainModuleTimeCheckIdle();
+int mainModuleWatchdogTask();
 int heartbeatIdle();
 void disableMotor();
 
 
 //variable delcarations
 QueueHandle_t	 	q_pedalbox_msg;
+
 uint32_t			pb_msg_rx_time;
 uint32_t			apps_imp_last_time_ms;
 Pedalbox_status_t	apps_imp_last;
