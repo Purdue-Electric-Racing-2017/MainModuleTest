@@ -16,9 +16,6 @@
 *						main module
 *
 ***************************************************************************/
-#include "FreeRTOS.h"
-#include "stm32f7xx_hal_can.h"
-#include "main_module_tasks.h"
 #include "CANRXProcess.h"
 
 /***************************************************************************
@@ -42,7 +39,7 @@
 *
 ***************************************************************************/
 void RXCAN_ISR(CAN_HandleTypeDef *hcan) {
-	xQueueSendFromISR(q_rxcan_process, hcan->pRxMsg, NULL);
+	xQueueSendFromISR(q_rxcan, hcan->pRxMsg, NULL);
 }
 
 
@@ -72,7 +69,7 @@ void CANFilterConfig(CAN_HandleTypeDef *hcan)
 	  //see filter configuration section of manifesto for filter numbering
 	  //also refer to "CAN Messages" in team documentation for addresses
 	  filter_conf.FilterIdHigh = 		0 << 5; // 2
-	  filter_conf.FilterIdLow = 		PEDALBOX1_ID << 5; // 0, "pedalbox1" throttle values and pedalbox errors
+	  filter_conf.FilterIdLow = 		ID_PEDALBOX1 << 5; // 0, "pedalbox1" throttle values and pedalbox errors
 	  filter_conf.FilterMaskIdHigh = 	0 << 5; //3
 	  filter_conf.FilterMaskIdLow = 	0 << 5;	//1, pedal errors
 	  filter_conf.FilterFIFOAssignment = CAN_FilterFIFO0;  //use interrupt RX0
@@ -105,7 +102,7 @@ void CANFilterConfig(CAN_HandleTypeDef *hcan)
 *     	to this the q_rxcan_process queue to be processed.
 *
 ***************************************************************************/
-void RXCANProcessTask(void *q_rxcan_process)
+void RXCANProcessTask()
 {
 	CanRxMsgTypeDef rx;  //CanRxMsgTypeDef to be received on the queue
 	for (;;)
@@ -113,46 +110,19 @@ void RXCANProcessTask(void *q_rxcan_process)
 
 		//if there is a CanRxMsgTypeDef in the queue, pop it, and store in rx
 
-		if (xQueueReceive((xQueueHandle) *q_rxcan_process, &rx, portMAX_DELAY) == pdTRUE)
+		if (xQueueReceive(q_rxcan, &rx, portMAX_DELAY) == pdTRUE)
 		{
 			//A CAN message has been recieved
 			//check what kind of message we received
 
-			if (rx.FMI == PEDALBOX1_FILTER) //if pedalbox1 message
+			if (rx.StdId == ID_PEDALBOX1) //if pedalbox1 message
 			{
-				Pedalbox_msg_t pedalboxmsg;
+				//send to pedalbox frame queue
+				xQueueSend(q_pedalbox_frame, rx, 100);
 
-				//mask then shift the throttle value data
-				uint8_t throttle_7_0 	=
-						rx.Data[PEDALBOX1_THROT_7_0_BYTE]  >> PEDALBOX1_THROT_7_0_OFFSET;  //Throttle Value (7:0) [7:0]
-				uint8_t throttle_11_8	=
-						(rx.Data[PEDALBOX1_THROT_11_8_BYTE] & PEDALBOX1_THROT_11_8_MASK) >> PEDALBOX1_THROT_11_8_OFFSET;  //Throttle Value (11:8) [3:0]
-				//mask then shift the brake value data
-				uint8_t brake_7_0 	=
-						rx.Data[PEDALBOX1_BRAKE_7_0_BYTE]  >> PEDALBOX1_THROT_7_0_OFFSET;  //Throttle Value (7:0) [7:0]
-				uint8_t brake_11_8	=
-						(rx.Data[PEDALBOX1_BRAKE_11_8_BYTE] & PEDALBOX1_BRAKE_11_8_MASK) >> PEDALBOX1_BRAKE_11_8_OFFSET;  //Throttle Value (11:8) [3:0]
-
-
-				//build the data
-				pedalboxmsg.throttle_level = 0;
-				pedalboxmsg.throttle_level |= throttle_7_0 << 0;
-				pedalboxmsg.throttle_level |= throttle_11_8 << 8;
-				pedalboxmsg.brake_level = 0;
-				pedalboxmsg.brake_level |= brake_7_0 << 0;
-				pedalboxmsg.brake_level |= brake_11_8 << 8;
-
-				//mask then shift the error flags
-				pedalboxmsg.APPS_Implausible =
-						(rx.Data[PEDALBOX1_IMP_BYTE] & PEDALBOX1_IMP_MASK) >> PEDALBOX1_IMP_OFFSET;  //Throttle Value (7:0) [7:0] and mask 1 bit
-				pedalboxmsg.EOR =
-						(rx.Data[PEDALBOX1_EOR_BYTE] & PEDALBOX1_EOR_MASK) >> PEDALBOX1_EOR_OFFSET;  //Throttle Value (7:0) [7:0] and mask 1 bit
-
-
-
-				xQueueSend(q_pedalbox_msg, pedalboxmsg, 100);
-			} else if (0) {
+			} else if (rx.StdId == ID_BAMOCAR_STATION_RX) {
 				//more messages....
+				xQueueSend(q_mc_frame, rx, 100);
 			}
 
 		}

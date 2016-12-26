@@ -19,6 +19,18 @@
 ***************************************************************************/
 #include "motor_controller_functions.h"
 
+int processMotorControllerFrame() {
+	CanRxMsgTypeDef rx;
+
+	while (1) {
+		if(xQueueReceive(q_mc_frame, 100))
+		{
+			//received a message from motor controller.
+			//todo interpret frame
+		}
+	}
+	return 0;
+}
 
 void cmdTorque(uint16_t torqueVal) {
 	//example 5ay tod, BAMOCAR CAN MANUAL

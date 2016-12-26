@@ -8,31 +8,19 @@
 #ifndef CANRXPROCESS_H_
 #define CANRXPROCESS_H_
 
+//includes
+#include "FreeRTOS.h"
+#include "stm32f7xx_hal_can.h"
+#include "main_module_tasks.h"
+#include "motor_controller_functions.h"
+
 //defines for reading data from RxCanMsgTypeDef
-#define PEDALBOX1_ID							0x500
-#define PEDALBOX1_FILTER 						0	//filter number corresponding to the PEDALBOX1 message
-#define PEDALBOX1_THROT_7_0_BYTE				0
-#define PEDALBOX1_THROT_7_0_OFFSET				0
-#define PEDALBOX1_THROT_7_0_MASK				0b11111111
-#define PEDALBOX1_THROT_11_8_BYTE				1
-#define PEDALBOX1_THROT_11_8_OFFSET				4
-#define PEDALBOX1_THROT_11_8_MASK				0b11110000
-#define PEDALBOX1_BRAKE_7_0_BYTE				2
-#define PEDALBOX1_BRAKE_7_0_OFFSET				0
-#define PEDALBOX1_BRAKE_7_0_MASK				0b11111111
-#define PEDALBOX1_BRAKE_11_8_BYTE				1
-#define PEDALBOX1_BRAKE_11_8_OFFSET				0
-#define PEDALBOX1_BRAKE_11_8_MASK				0b00001111
-#define PEDALBOX1_EOR_BYTE						3
-#define PEDALBOX1_EOR_OFFSET					0
-#define PEDALBOX1_EOR_MASK						0b00000001
-#define PEDALBOX1_IMP_BYTE						3
-#define PEDALBOX1_IMP_OFFSET					1
-#define PEDALBOX1_IMP_MASK						0b00000010
+#define ID_PEDALBOX1							0x500
 
 
 
-QueueHandle_t	q_rxcan_process;
+
+QueueHandle_t	q_rxcan;
 
 
 #endif /* CANRXPROCESS_H_ */
