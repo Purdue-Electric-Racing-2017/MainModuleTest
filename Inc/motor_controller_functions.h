@@ -80,8 +80,8 @@ void cmdTransmissionAbortPermenant(uint8_t regid);
 
 #define STATUS_ENABLE_OFFSET						0
 #define STATUS_DRIVE_STOPPED_OFFSET					1
-#define STATUS_LIM+_OFFSET							2
-#define STATUS_LIM-_OFFSET							3		//bit 4 is free
+#define STATUS_LIM+_OFFSET						2
+#define STATUS_LIM-_OFFSET						3		//bit 4 is free
 #define STATUS_CONTINUOUS_CURRENT_OFFSET				5
 #define STATUS_POS_CURRENT_CONTROLLER_OFFSET				6
 #define STATUS_POS_CONTROLLER_OFFSET					7
