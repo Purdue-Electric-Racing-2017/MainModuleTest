@@ -4,7 +4,7 @@
   * Description        : Main program body
   ******************************************************************************
   *
-  * Copyright (c) 2016 STMicroelectronics International N.V. 
+  * Copyright (c) 2017 STMicroelectronics International N.V. 
   * All rights reserved.
   *
   * Redistribution and use in source and binary forms, with or without 
@@ -44,9 +44,10 @@
 #include "main.h"
 #include "stm32f7xx_hal.h"
 #include "cmsis_os.h"
+#include "car.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "main_module_tasks.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -56,6 +57,7 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+Car_t car;
 
 /* USER CODE END PV */
 
@@ -95,7 +97,8 @@ int main(void)
   MX_CAN1_Init();
 
   /* USER CODE BEGIN 2 */
-
+  carInit();
+  initRTOSObjects();
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -702,6 +705,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
   HAL_GPIO_Init(VCP_TX_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : START_BTN_Pin */
+  GPIO_InitStruct.Pin = START_BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(START_BTN_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : ARDUINO_PWM_D5_Pin */
   GPIO_InitStruct.Pin = ARDUINO_PWM_D5_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -869,6 +878,10 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOG, ARDUINO_D4_Pin|ARDUINO_D2_Pin|EXT_RST_Pin, GPIO_PIN_RESET);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

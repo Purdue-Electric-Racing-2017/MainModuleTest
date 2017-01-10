@@ -9,26 +9,26 @@
 #define MOTOR_CONTROLLER_FUNCTIONS_H_
 
 #include "stm32f7xx_hal.h"
+#include "cmsis_os.h"
+#include "car.h"
 
 //function prototypes
-int processMotorControllerFrame(CanRxMsgTypeDef rx);
-void cmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS);
-void cmdTransmissionRequestSingle(uint8_t regid);
-void cmdTransmissionAbortPermenant(uint8_t regid);
+int taskProcessMotorControllerFrame();
+void mcCmdTransmissionRequestPermenant (uint8_t regid, uint8_t retransmitTimeMS);
+void mcCmdTransmissionRequestSingle(uint8_t regid);
+void mcCmdTransmissionAbortPermenant(uint8_t regid);
+void mcCmdTorque(uint16_t);
 
-//CAN message defines
-//ID
-#define ID_BAMOCAR_STATION_TX		0x201	//message recieved by MC
-#define ID_BAMOCAR_STATION_RX		0x181	//message sent by MC
+//CAN Defines
 
 //DLC defines
 #define DLC_CMD_REQUEST_DATA		3
 #define DLC_CMD_TORQUE				3
 
 //REGID, page 15 ndrive manual
-//#define REGID_SPEED_CMD_VAL		0x5d
-//#define REGID_SPEED_CMD_VAL_BRAMP	0x31
-#define REGID_SPEED_CMD_VAL_ARAMP	0x32
+#define REGID_SPEED_CMD_VAL			0x5d
+#define REGID_SPEED_CMD_VAL_BRAMP	0x31
+#define REGID_SPEED_CMD_VAL_ARAMP	0x32	//use this
 #define REGID_SPEED_ACTUAL			0x30  //rpm
 #define REGID_SPEED_ACTUAL_FILTER 	0xa8
 #define REGID_CMD_REQUEST_DATA		0x3d
@@ -113,11 +113,11 @@ void cmdTransmissionAbortPermenant(uint8_t regid);
 #define MESSAGES_WARNING0_OFFSET		16
 #define MESSAGES_ILLEGALSTATUR_OFFSET	17
 #define MESSAGES_WARNING2_OFFSET		18
-#define MESSAGES_POWERVOLTAGE_OFFSET	21
-#define MESSAGES_MOTORTEMP_OFFSET		22
-#define MESSAGES_DEVICETEMP_OFFSET		23
-#define MESSAGES_OVERVOLTAGE_OFFSET		24
-#define MESSAGES_IPEAK_OFFSET			25
+//#define MESSAGES_POWERVOLTAGE_OFFSET	21
+//#define MESSAGES_MOTORTEMP_OFFSET		22
+//#define MESSAGES_DEVICETEMP_OFFSET		23
+//#define MESSAGES_OVERVOLTAGE_OFFSET		24
+//#define MESSAGES_IPEAK_OFFSET			25
 
 //range definitions
 #define RETRANSMISSION_SINGLE		0x00;
