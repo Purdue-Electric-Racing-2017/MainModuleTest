@@ -11,9 +11,11 @@
 //includes
 #include "stm32f7xx_hal.h"
 #include "cmsis_os.h"
+#include "car.h"
 #include "CANProcess.h"
 #include "motor_controller_functions.h"
-#include "car.h"
+#include "BMS.h"
+
 
 
 //function prototypes

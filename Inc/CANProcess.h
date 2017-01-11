@@ -14,9 +14,10 @@
 #include "car.h"
 
 //defines for reading data from RxCanMsgTypeDef
-#define ID_PEDALBOX1							0x500
+#define ID_PEDALBOX1							0x100
 #define ID_BAMOCAR_STATION_TX					0x201	//message recieved by MC
 #define ID_BAMOCAR_STATION_RX					0x181	//message sent by MC
+#define ID_BMS_PACK_VOLTAGE						0x300
 
 //pedalbox defines //todo not sure if better to send whole frame or just pbmsg.
 #define PEDALBOX1_FILTER 						0	//filter number corresponding to the PEDALBOX1 message

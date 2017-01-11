@@ -47,14 +47,13 @@ void carInit() {
 	car.throttle = 0;
 	car.brake = 0;
 	car.phcan = &hcan1;
+
 }
 
 void ISR_StartButtonPressed() {
-	if (1) {
-		if (car.state == CAR_STATE_INIT)
-		{
-			if (car.brake >= BRAKE_PRESSED_THRESHOLD)
+	if (car.state == CAR_STATE_INIT)
+	{
+//		if (car.brake >= BRAKE_PRESSED_THRESHOLD)
 			car.state = CAR_STATE_READY2DRIVE;
-		}
 	}
 }

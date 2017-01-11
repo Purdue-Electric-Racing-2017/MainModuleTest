@@ -41,7 +41,7 @@
 ***************************************************************************/
 void ISR_RXCAN()
 {
-	xQueueSendFromISR(car.q_rxcan, (car.phcan->pTxMsg), NULL);
+	xQueueSendFromISR(car.q_rxcan, (car.phcan->pRxMsg), NULL);
 }
 
 
@@ -70,7 +70,7 @@ void CANFilterConfig()
 
 	  //see filter configuration section of manifesto for filter numbering
 	  //also refer to "CAN Messages" in team documentation for addresses
-	  filter_conf.FilterIdHigh = 		0 << 5; // 2
+	  filter_conf.FilterIdHigh = 		0x7ff << 5; // 2
 	  filter_conf.FilterIdLow = 		ID_PEDALBOX1 << 5; // 0, "pedalbox1" throttle values and pedalbox errors
 	  filter_conf.FilterMaskIdHigh = 	0 << 5; //3
 	  filter_conf.FilterMaskIdLow = 	0 << 5;	//1, pedal errors

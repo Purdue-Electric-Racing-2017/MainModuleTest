@@ -60,6 +60,7 @@ osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 Car_t car;
+BMS_t BMS;
 
 /* USER CODE END PV */
 
@@ -104,6 +105,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   carInit();
+  CANFilterConfig();
   initRTOSObjects();
   /* USER CODE END 2 */
 
@@ -275,13 +277,13 @@ static void MX_CAN1_Init(void)
 {
 
   hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 4;
+  hcan1.Init.Prescaler = 8;
   hcan1.Init.Mode = CAN_MODE_NORMAL;
-  hcan1.Init.SJW = CAN_SJW_1TQ;
+  hcan1.Init.SJW = CAN_SJW_4TQ;
   hcan1.Init.BS1 = CAN_BS1_7TQ;
   hcan1.Init.BS2 = CAN_BS2_8TQ;
   hcan1.Init.TTCM = DISABLE;
-  hcan1.Init.ABOM = DISABLE;
+  hcan1.Init.ABOM = ENABLE;
   hcan1.Init.AWUM = DISABLE;
   hcan1.Init.NART = DISABLE;
   hcan1.Init.RFLM = DISABLE;

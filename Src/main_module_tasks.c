@@ -18,7 +18,6 @@
 #include "main_module_tasks.h"
 
 
-
 void taskPedalBoxMsgHandler() {
 /***************************************************************************
 *
@@ -227,6 +226,10 @@ void initRTOSObjects() {
 
 	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 1024, NULL, 1, NULL);
 	xTaskCreate(taskCarMainRoutine, "CarMainRoutine", 1024, NULL, 1, NULL);
+	xTaskCreate(taskTXCAN, "TX CAN", 1024, NULL, 1, NULL);
+	xTaskCreate(taskRXCAN, "RX CAN", 1024, NULL, 1, NULL);
+
+
 
 
  }
@@ -270,6 +273,7 @@ void taskCarMainRoutine() {
 					}
 
 				}*/
+				BMS.cell
 
 				torque_to_send = car.throttle;
 			}
@@ -286,3 +290,4 @@ void taskCarMainRoutine() {
 	}
 
 }
+

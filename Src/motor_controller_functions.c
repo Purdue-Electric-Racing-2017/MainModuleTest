@@ -34,11 +34,12 @@ int taskProcessMotorControllerFrame() {
 }
 
 void mcCmdTorque(uint16_t torqueVal) {
-	//example 5ay tod, BAMOCAR CAN MANUAL
+	//example 5, BAMOCAR CAN MANUAL
 	CanTxMsgTypeDef tx;
 	tx.IDE = 		CAN_ID_STD;
 	tx.StdId = 		ID_BAMOCAR_STATION_TX;
 	tx.DLC = 		DLC_CMD_TORQUE;
+	tx.RTR =		CAN_RTR_DATA;
 	tx.Data[0] = 	REGID_CMD_TORQUE;
 	tx.Data[1] =	(uint8_t) torqueVal;	//bytes 7-0
 	tx.Data[2] =	(uint8_t) (torqueVal >> 8);		//bytes 11-8
