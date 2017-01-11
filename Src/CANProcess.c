@@ -158,8 +158,8 @@ void taskRXCAN()
 		if (xQueueReceive(car.q_rxcan, &rx, portMAX_DELAY) == pdTRUE)
 		{
 			//A CAN message has been recieved
-			//check what kind of message we received
 
+			//check what kind of message we received
 			if (rx.StdId == ID_PEDALBOX1) //if pedalbox1 message
 			{
 				processPedalboxFrame(&rx); //todo check if copies properly

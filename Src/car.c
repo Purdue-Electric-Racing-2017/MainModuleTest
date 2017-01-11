@@ -43,6 +43,7 @@ void carSetBrakeLight(Brake_light_status_t status)
 
 void carInit() {
 	car.state = CAR_STATE_INIT;
+	car.pb_mode = PEDALBOX_MODE_DIGITAL;
 	car.throttle = 0;
 	car.brake = 0;
 	car.phcan = &hcan1;
