@@ -220,14 +220,15 @@ void initRTOSObjects() {
 	car.q_pedalboxmsg = 	xQueueCreate(QUEUE_SIZE_PEDALBOXMSG, sizeof(Pedalbox_msg_t));
 	car.q_mc_frame = 		xQueueCreate(QUEUE_SIZE_MCFRAME, sizeof(CanRxMsgTypeDef));
 
-	car.m_CAN =			xSemaphoreCreateMutex();
+	car.m_CAN =				xSemaphoreCreateMutex();
 
 	/* Create Tasks */
 
-	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 1024, NULL, 1, NULL);
-	xTaskCreate(taskCarMainRoutine, "CarMainRoutine", 1024, NULL, 1, NULL);
-	xTaskCreate(taskTXCAN, "TX CAN", 1024, NULL, 1, NULL);
-	xTaskCreate(taskRXCAN, "RX CAN", 1024, NULL, 1, NULL);
+	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 512, NULL, 1, NULL);
+	xTaskCreate(taskCarMainRoutine, "CarMainRoutine", 512, NULL, 1, NULL);
+	xTaskCreate(taskTXCAN, "TX CAN", 512, NULL, 1, NULL);
+	xTaskCreate(taskRXCANProcess, "RX CAN Process", 512, NULL, 1, NULL);
+	xTaskCreate(taskRXCAN, "RX CAN", 512, NULL, 1, NULL);
 
 
 
@@ -273,7 +274,6 @@ void taskCarMainRoutine() {
 					}
 
 				}*/
-				BMS.cell
 
 				torque_to_send = car.throttle;
 			}

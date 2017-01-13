@@ -42,8 +42,10 @@
 
 void ISR_RXCAN();
 void CANFilterConfig();
-void taskRXCAN();
+void taskRXCANProcess();
 void taskTXCAN();
+void taskRXCAN();
+
 
 void processPedalboxFrame(CanRxMsgTypeDef * rx);
 
