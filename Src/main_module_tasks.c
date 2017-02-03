@@ -15,7 +15,20 @@
 *       handles safety checks, and sets throttle level
 *
 ***************************************************************************/
+#include "stm32f7xx_hal.h"
+#include "cmsis_os.h"
+#include "car.h"
+#include "CANProcess.h"
 #include "main_module_tasks.h"
+#include "BMS.h"
+#include "WheelModule.h"
+#include <math.h>
+
+void taskLaunchControl() {
+	while (1) {
+		vTaskDelay(LAUNCH_CONTROL_INTERVAL_MS);
+	}
+}
 
 
 void taskPedalBoxMsgHandler() {
@@ -49,24 +62,49 @@ void taskPedalBoxMsgHandler() {
 	while (1) {
 
 		if(xQueueReceive(car.q_pedalboxmsg, &pedalboxmsg, 1000)){
-
 			//get current time in ms
 			uint32_t current_time_ms = xTaskGetTickCount() / portTICK_PERIOD_MS;;
-
 			// update time stamp, indicates when a pedalbox message was last received
 			car.pb_msg_rx_time = current_time_ms;
 
+			//check if calibration values should be updated
+			if (car.calibrate_flag == CALIBRATE_THROTTLE_MIN) {
+				car.throttle1_min = pedalboxmsg.throttle1_raw;
+				car.throttle2_min = pedalboxmsg.throttle2_raw;
+			} else if (car.calibrate_flag == CALIBRATE_THROTTLE_MAX) {
+				car.throttle1_max = pedalboxmsg.throttle1_raw;
+				car.throttle2_max = pedalboxmsg.throttle2_raw;
+			} else 	if (car.calibrate_flag == CALIBRATE_BRAKE_MIN) {
+				car.brake1_min = pedalboxmsg.brake1_raw;
+				car.brake2_min = pedalboxmsg.brake2_raw;
+			} else if (car.calibrate_flag == CALIBRATE_BRAKE_MAX) {
+				car.brake1_max = pedalboxmsg.brake1_raw;
+				car.brake2_max = pedalboxmsg.brake2_raw;
+			}
 
 			/////////////PROCESS DATA///////////////
-			Pedalbox_status_t  pedalbox_status = PEDALBOX_STATUS_NO_ERROR;  //local flag to be set if there is an error
+			Pedalbox_status_t  	pedalbox_status = PEDALBOX_STATUS_NO_ERROR;  //local flag to be set if there is an error
+			float				throttle1_cal = (pedalboxmsg.throttle1_raw - car.throttle1_min) / (car.throttle1_max - car.throttle1_min);  //value 0-1, throttle 1 calibrated between min and max
+			float				throttle2_cal = (pedalboxmsg.throttle2_raw - car.throttle2_min) / (car.throttle2_max - car.throttle2_min);;  //value 0-1, throttle 2 calibrated between min and max
+			float				brake1_cal	  = (pedalboxmsg.brake1_raw - car.brake1_min) / (car.brake1_max - car.brake1_min);  //value 0-1, brake 1 calibrated between min and max
+			float				brake2_cal	  = (pedalboxmsg.brake2_raw - car.brake2_min) / (car.brake2_max - car.brake2_min);  //value 0-1, brake 2 calibrated between min and max
+			float				throttle_avg  = (throttle1_cal + throttle2_cal) / 2;
+			float				brake_avg     = (brake1_cal + brake2_cal) / 2;
+
+
 
 			// EV 2.4.6: Encoder out of range
-			if (pedalboxmsg.EOR == PEDALBOX_STATUS_ERROR) {
+			if (pedalboxmsg.throttle1_raw >	car.throttle1_max ||					//legacy: pedalboxmsg.EOR == PEDALBOX_STATUS_ERROR
+				pedalboxmsg.throttle2_raw >	car.throttle2_max)
+			{
 				pedalbox_status = PEDALBOX_STATUS_ERROR;
 			} 
 			
-			//APPS Implausibility error handling, EV 2.3.5
-			if (pedalboxmsg.APPS_Implausible == PEDALBOX_STATUS_ERROR) {
+			//APPS Implausibility error handling, EV 2.3.5,
+			//	error if throttle sensors disagree more than 10% travel
+			//	for more than 100ms
+			if (fabs(throttle1_cal - throttle2_cal) > .1 ) //legacy: (pedalboxmsg.APPS_Implausible == PEDALBOX_STATUS_ERROR)
+			{
 				//if error is persistent
 				if (car.apps_imp_last_state == PEDALBOX_STATUS_ERROR)
 				{
@@ -86,14 +124,14 @@ void taskPedalBoxMsgHandler() {
 
 			//Brake
 			//check if brake level is greater than the threshold level
-			if (pedalboxmsg.brake_level_raw >= BRAKE_PRESSED_THRESHOLD * MAX_BRAKE_LEVEL) {
+			if (brake_avg >= BRAKE_PRESSED_THRESHOLD) {
 				//brake is presssed
 				carSetBrakeLight(BRAKE_LIGHT_ON);  //turn on brake light
 
 
 				//EV 2.5, check if the throttle level is greater than 25% while brakes are on
-				if (pedalboxmsg.throttle_level_raw > APPS_BP_PLAUS_THRESHOLD * MAX_THROTTLE_LEVEL) {
-					//set apps brake pedal plausibility error
+				if (throttle_avg > APPS_BP_PLAUS_THRESHOLD) {
+					//set apps-brake pedal plausibility error
 					car.apps_bp_plaus = PEDALBOX_STATUS_ERROR;
 				}
 			} else {
@@ -103,8 +141,8 @@ void taskPedalBoxMsgHandler() {
 
 
 			if (car.apps_bp_plaus == PEDALBOX_STATUS_ERROR) {
-				//EV 2.5.1, reset apps brake pedal plausibility error only if throttle level is less than the .05
-				if(pedalboxmsg.throttle_level_raw <= APPS_BP_PLAUS_RESET_THRESHOLD * MAX_THROTTLE_LEVEL){
+				//EV 2.5.1, reset apps-brake pedal plausibility error only if throttle level is less than the .05
+				if(throttle_avg <= APPS_BP_PLAUS_RESET_THRESHOLD){
 					car.apps_bp_plaus = PEDALBOX_STATUS_NO_ERROR;
 				}
 			}
@@ -113,7 +151,7 @@ void taskPedalBoxMsgHandler() {
 			if (pedalbox_status == PEDALBOX_STATUS_NO_ERROR)
 			{
 				//no errors, set throttle to value received from pedalbox
-				car.throttle = pedalboxmsg.throttle_level_raw;
+				car.throttle = throttle_avg * MAX_THROTTLE_LEVEL;
 			} else {
 				//if there were errors, set throttle = 0
 				car.throttle = 0;
@@ -223,16 +261,12 @@ void initRTOSObjects() {
 	car.m_CAN =				xSemaphoreCreateMutex();
 
 	/* Create Tasks */
-
+	//todo optimize stack depths http://www.freertos.org/FAQMem.html#StackSize
 	xTaskCreate(taskPedalBoxMsgHandler, "PedalBoxMsgHandler", 512, NULL, 1, NULL);
 	xTaskCreate(taskCarMainRoutine, "CarMainRoutine", 512, NULL, 1, NULL);
 	xTaskCreate(taskTXCAN, "TX CAN", 512, NULL, 1, NULL);
-	xTaskCreate(taskRXCANProcess, "RX CAN Process", 512, NULL, 1, NULL);
+	xTaskCreate(taskRXCANProcess, "RX CAN Process", 1024, NULL, 1, NULL);
 	xTaskCreate(taskRXCAN, "RX CAN", 512, NULL, 1, NULL);
-
-
-
-
  }
 
 

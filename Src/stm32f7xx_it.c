@@ -109,7 +109,8 @@ void CAN1_RX0_IRQHandler(void)
   /* USER CODE END CAN1_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX0_IRQn 1 */
-	ISR_RXCAN();
+	xQueueSendFromISR(car.q_rxcan, (car.phcan->pRxMsg), NULL);
+
   /* USER CODE END CAN1_RX0_IRQn 1 */
 }
 
@@ -123,7 +124,7 @@ void CAN1_RX1_IRQHandler(void)
   /* USER CODE END CAN1_RX1_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan1);
   /* USER CODE BEGIN CAN1_RX1_IRQn 1 */
-	ISR_RXCAN();
+	xQueueSendFromISR(car.q_rxcan, (car.phcan->pRxMsg), NULL);
   /* USER CODE END CAN1_RX1_IRQn 1 */
 }
 

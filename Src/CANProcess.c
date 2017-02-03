@@ -17,7 +17,9 @@
 *
 ***************************************************************************/
 #include <CANProcess.h>
-#include <main_module_tasks.h>
+#include "main_module_tasks.h"
+#include "car.h"
+
 
 /***************************************************************************
 *
@@ -41,7 +43,6 @@
 ***************************************************************************/
 void ISR_RXCAN()
 {
-	xQueueSendFromISR(car.q_rxcan, (car.phcan->pRxMsg), NULL);
 }
 
 
@@ -85,8 +86,8 @@ void CANFilterConfig()
 {
 	  CAN_FilterConfTypeDef FilterConf;
 	  FilterConf.FilterIdHigh = 	0b0000000001000000; // 2
-	  FilterConf.FilterIdLow = 		0b0000000000100000; // 0
-	  FilterConf.FilterMaskIdHigh = 0x7ff << 5; //3
+	  FilterConf.FilterIdLow = 		ID_PEDALBOXCALIBRATE << 5; // 0
+	  FilterConf.FilterMaskIdHigh = ID_PEDALBOX2 << 5; //3
 	  FilterConf.FilterMaskIdLow = 	0x113 << 5;	//1
 	  FilterConf.FilterFIFOAssignment = CAN_FilterFIFO0;
 	  FilterConf.FilterNumber = 0;
@@ -152,6 +153,8 @@ void taskTXCAN()
 
 void taskRXCAN()
 {
+	CanRxMsgTypeDef rx;
+	hcan1.pRxMsg = &rx;
 	for (;;)
 	{
 
@@ -190,7 +193,7 @@ void taskRXCAN()
 void taskRXCANProcess()
 {
 	CanRxMsgTypeDef rx;  //CanRxMsgTypeDef to be received on the queue
-	for (;;)
+	while (1)
 	{
 
 		//if there is a CanRxMsgTypeDef in the queue, pop it, and store in rx
@@ -199,16 +202,32 @@ void taskRXCANProcess()
 			//A CAN message has been recieved
 
 			//check what kind of message we received
-			if (rx.StdId == ID_PEDALBOX1) //if pedalbox1 message
+			if (rx.StdId == ID_PEDALBOX2) //if pedalbox1 message
 			{
 				processPedalboxFrame(&rx); //todo check if copies properly
-
+			} else if  (rx.StdId == ID_PEDALBOXCALIBRATE ){
+				processCalibrate(&rx);
 			} else if (rx.StdId == ID_BAMOCAR_STATION_RX) { //if bamocar message
 				//forward frame to mc frame queue
 				xQueueSend(car.q_mc_frame, &rx, 100);
+			} else if (	rx.StdId == ID_WHEEL_FR ||
+						rx.StdId == ID_WHEEL_FL ||
+						rx.StdId == ID_WHEEL_RR ||
+						rx.StdId == ID_WHEEL_RL) //todo add all the other wheel module IDs
+			{
+				processWheelModuleFrame(&rx);
 			}
-
 		}
+	}
+}
+
+void processWheelModuleFrame(CanRxMsgTypeDef* rx) {
+	uint16_t speed = 0;
+	speed |= (rx->Data[WM_SPEED_7_0_BYTE] & 0xFF);
+	speed |= ((rx->Data[WM_SPEED_11_8_BYTE] << 8) & 	0x0F00);
+	//todo process wheel module stuff
+	if (rx->StdId == ID_WHEEL_FR) {
+		wheelModule.speedFR = rx->Data[0];
 	}
 }
 
@@ -239,30 +258,45 @@ void processPedalboxFrame(CanRxMsgTypeDef* rx)
 
 		///////////SCRUB DATA the from the CAN frame//////////////
 		//mask then shift the throttle value data
-		uint8_t throttle_7_0 	=
-				rx->Data[PEDALBOX1_THROT_7_0_BYTE]  >> PEDALBOX1_THROT_7_0_OFFSET;  //Throttle Value (7:0) [7:0]
-		uint8_t throttle_11_8	=
-				(rx->Data[PEDALBOX1_THROT_11_8_BYTE] & PEDALBOX1_THROT_11_8_MASK) >> PEDALBOX1_THROT_11_8_OFFSET;  //Throttle Value (11:8) [3:0]
+		uint8_t throttle1_7_0 	=
+				rx->Data[PEDALBOX1_THROT1_7_0_BYTE]  >> PEDALBOX1_THROT1_7_0_OFFSET;  //Throttle 1 Value (7:0) [7:0]
+		uint8_t throttle1_11_8	=
+				(rx->Data[PEDALBOX1_THROT1_11_8_BYTE] & PEDALBOX1_THROT1_11_8_MASK) >> PEDALBOX1_THROT1_11_8_OFFSET;  //Throttle 1 Value (11:8) [3:0]
+		uint8_t throttle2_7_0	=
+				rx->Data[PEDALBOX1_THROT2_7_0_BYTE]  >> PEDALBOX1_THROT2_7_0_OFFSET;  //Throttle 2 Value (7:0) [7:0]
+		uint8_t throttle2_11_8	=
+				(rx->Data[PEDALBOX1_THROT2_11_8_BYTE] & PEDALBOX1_THROT2_11_8_MASK) >> PEDALBOX1_THROT2_11_8_OFFSET;  //Throttle 2 Value (11:8) [3:0]
+
 		//mask then shift the brake value data
-		uint8_t brake_7_0 	=
-				rx->Data[PEDALBOX1_BRAKE_7_0_BYTE]  >> PEDALBOX1_THROT_7_0_OFFSET;  //Throttle Value (7:0) [7:0]
-		uint8_t brake_11_8	=
-				(rx->Data[PEDALBOX1_BRAKE_11_8_BYTE] & PEDALBOX1_BRAKE_11_8_MASK) >> PEDALBOX1_BRAKE_11_8_OFFSET;  //Throttle Value (11:8) [3:0]
+		uint8_t brake1_7_0 	=
+				rx->Data[PEDALBOX1_BRAKE1_7_0_BYTE]  >> PEDALBOX1_BRAKE1_7_0_OFFSET;  //brake 1 Value (7:0) [7:0]
+		uint8_t brake1_11_8	=
+				(rx->Data[PEDALBOX1_BRAKE1_11_8_BYTE] & PEDALBOX1_BRAKE1_11_8_MASK) >> PEDALBOX1_BRAKE1_11_8_OFFSET;  //brake 1 Value (11:8) [3:0]
+		uint8_t brake2_7_0	=
+				rx->Data[PEDALBOX1_BRAKE2_7_0_BYTE]  >> PEDALBOX1_BRAKE2_7_0_OFFSET;  //brake 2 Value (7:0) [7:0]
+		uint8_t brake2_11_8	=
+				(rx->Data[PEDALBOX1_BRAKE2_11_8_BYTE] & PEDALBOX1_BRAKE2_11_8_MASK) >> PEDALBOX1_BRAKE2_11_8_OFFSET;  //brake 2 Value (11:8) [3:0]
 
 		//mask then shift the error flags
 		pedalboxmsg.APPS_Implausible =
-				(rx->Data[PEDALBOX1_IMP_BYTE] & PEDALBOX1_IMP_MASK) >> PEDALBOX1_IMP_OFFSET;  //Throttle Value (7:0) [7:0] and mask 1 bit
+				(rx->Data[PEDALBOX1_IMP_BYTE] & PEDALBOX1_IMP_MASK) >> PEDALBOX1_IMP_OFFSET;
 		pedalboxmsg.EOR =
-				(rx->Data[PEDALBOX1_EOR_BYTE] & PEDALBOX1_EOR_MASK) >> PEDALBOX1_EOR_OFFSET;  //Throttle Value (7:0) [7:0] and mask 1 bit
+				(rx->Data[PEDALBOX1_EOR_BYTE] & PEDALBOX1_EOR_MASK) >> PEDALBOX1_EOR_OFFSET;
 
 
 		//build the data
-		pedalboxmsg.throttle_level_raw = 0;
-		pedalboxmsg.throttle_level_raw |= throttle_7_0 << 0;
-		pedalboxmsg.throttle_level_raw |= throttle_11_8 << 8;
-		pedalboxmsg.brake_level_raw = 0;
-		pedalboxmsg.brake_level_raw |= brake_7_0 << 0;
-		pedalboxmsg.brake_level_raw |= brake_11_8 << 8;
+		pedalboxmsg.throttle1_raw = 0;
+		pedalboxmsg.throttle1_raw |= throttle1_7_0 << 0;
+		pedalboxmsg.throttle1_raw |= throttle1_11_8 << 8;
+		pedalboxmsg.throttle2_raw = 100;
+		pedalboxmsg.throttle2_raw |= throttle2_7_0 << 0;
+		pedalboxmsg.throttle2_raw |= throttle2_11_8 << 8;
+		pedalboxmsg.brake1_raw = 0;
+		pedalboxmsg.brake1_raw |= brake1_7_0 << 0;
+		pedalboxmsg.brake1_raw |= brake1_11_8 << 8;
+		pedalboxmsg.brake2_raw = 100;
+		pedalboxmsg.brake2_raw |= brake2_7_0 << 0;
+		pedalboxmsg.brake2_raw |= brake2_11_8 << 8;
 
 
 		//send to pedalboxmsg to queue
@@ -270,4 +304,18 @@ void processPedalboxFrame(CanRxMsgTypeDef* rx)
 	}
 }
 
+void processCalibrate(CanRxMsgTypeDef* rx) {
+	//set the calibration flag, so calibration values are updated upon reception of new pedalboxmsg
+	if 		  (rx->Data[0] == 0x01) {
+		car.calibrate_flag = CALIBRATE_THROTTLE_MAX; //calibrate high
+	} else if (rx->Data[0] == 0x02) {
+		car.calibrate_flag = CALIBRATE_THROTTLE_MIN; //calibrate low
+	} else if (rx->Data[0] == 0x03) {
+		car.calibrate_flag = CALIBRATE_BRAKE_MAX; //calibrate high
+	} else if (rx->Data[0] == 0x04) {
+		car.calibrate_flag = CALIBRATE_BRAKE_MIN; //calibrate low
+	} else {
+		car.calibrate_flag = CALIBRATE_NONE;
+	}
 
+}

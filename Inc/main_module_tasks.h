@@ -8,13 +8,11 @@
 #ifndef MAIN_MODULE_TASKS_H_
 #define MAIN_MODULE_TASKS_H_
 
+
 //includes
-#include "stm32f7xx_hal.h"
-#include "cmsis_os.h"
-#include "car.h"
-#include "CANProcess.h"
 #include "motor_controller_functions.h"
-#include "BMS.h"
+
+#define LAUNCH_CONTROL_INTERVAL_MS	100
 
 
 

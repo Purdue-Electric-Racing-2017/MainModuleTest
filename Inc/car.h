@@ -34,7 +34,7 @@
 #define HEARTBEAT_PERIOD			100 / portTICK_RATE_MS
 #define PEDALBOX_TIMEOUT			500 / portTICK_RATE_MS
 #define MAX_BRAKE_LEVEL 			0xFFF
-#define MAX_THROTTLE_LEVEL			0xFFF
+#define MAX_THROTTLE_LEVEL			0x7FFF
 #define LC_THRESHOLD				10			// todo lc threshold BOGUS VALUE
 
 //rtos parameter defines
@@ -42,6 +42,7 @@
 #define QUEUE_SIZE_TXCAN			3
 #define QUEUE_SIZE_PEDALBOXMSG	3
 #define QUEUE_SIZE_MCFRAME			3
+
 
 
 typedef enum
@@ -72,12 +73,23 @@ typedef enum {
 	PEDALBOX_MODE_DIGITAL
 } Pedalbox_mode_t;
 
+typedef enum {
+	CALIBRATE_NONE,
+	CALIBRATE_THROTTLE_MIN,
+	CALIBRATE_THROTTLE_MAX,
+	CALIBRATE_BRAKE_MIN,
+	CALIBRATE_BRAKE_MAX
+} Calibrate_flag_t;
+
 // Structure to hold data passed through the queue to pedalBoxMsgHandler
 typedef struct _pedalbox_msg {
 	Pedalbox_status_t 		EOR; 				// EV 2.4.6: Encoder out of range
 	Pedalbox_status_t 		APPS_Implausible; 	// EV 2.3.5
-	uint16_t 				throttle_level_raw;		// raw throttle data from pedalbox, (average of the two sensors)
-	uint16_t 				brake_level_raw;
+	uint16_t 				throttle1_raw;		// raw throttle data from pedalbox
+	uint16_t				throttle2_raw;
+	uint16_t 				brake1_raw;
+	uint16_t				brake2_raw;
+
 } Pedalbox_msg_t;
 
 
@@ -85,7 +97,15 @@ typedef struct {
 
 	Car_state_t 			state;
 	uint8_t					errorFlags;
-
+	//calibration values
+	uint16_t				throttle1_min;
+	uint16_t				throttle1_max;
+	uint16_t				throttle2_min;
+	uint16_t				throttle2_max;
+	uint16_t				brake1_min;
+	uint16_t				brake1_max;
+	uint16_t				brake2_min;
+	uint16_t				brake2_max;
 	uint16_t 				throttle;					//car's intended throttle position
 	uint16_t 				brake;						//car's intended brake position
 	uint32_t				pb_msg_rx_time;				//indicates when a pedalbox message was last received
@@ -93,6 +113,7 @@ typedef struct {
 	Pedalbox_status_t		apps_imp_last_state;		//the last pedalbox message imp sate
 	Pedalbox_status_t		apps_bp_plaus;				//apps-brake plausibility status
 	Pedalbox_mode_t			pb_mode;					//determines whether pb will be analog or CAN
+	Calibrate_flag_t		calibrate_flag;
 
 	LC_status_t				lc_status;
 	//Pedalbox_msg_t 			pb_current_msg;
